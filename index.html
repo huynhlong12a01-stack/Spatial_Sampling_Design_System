@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Regression Kriging</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="control-panel">
+        <header class="brand-row">
+          <div>
+            <h1>Regression Kriging</h1>
+            <p>Nội suy từ điểm đo, ROI và variogram phần dư.</p>
+          </div>
+          <button class="icon-button" id="sampleBtn" type="button" title="Nạp dữ liệu mẫu">↺</button>
+        </header>
+
+        <nav class="tabs" aria-label="Nhóm thiết lập">
+          <button class="tab-button active" data-tab="data" type="button">Dữ liệu</button>
+          <button class="tab-button" data-tab="roi" type="button">ROI</button>
+          <button class="tab-button" data-tab="model" type="button">Mô hình</button>
+          <button class="tab-button" data-tab="export" type="button">Xuất</button>
+        </nav>
+
+        <section class="tab-panel active" id="tab-data">
+          <label class="file-input">
+            <span>CSV điểm đo</span>
+            <input id="csvFile" type="file" accept=".csv,text/csv" />
+          </label>
+          <label>
+            <span>Bảng điểm</span>
+            <textarea id="csvText" spellcheck="false" aria-label="Bảng điểm đo CSV"></textarea>
+          </label>
+          <div class="field-grid">
+            <label>
+              <span>Cột lat</span>
+              <select id="latColumn"></select>
+            </label>
+            <label>
+              <span>Cột lon</span>
+              <select id="lonColumn"></select>
+            </label>
+            <label>
+              <span>Chỉ tiêu</span>
+              <select id="valueColumn"></select>
+            </label>
+            <label>
+              <span>Trend</span>
+              <select id="trendBasis">
+                <option value="linear">Tuyến tính</option>
+                <option value="quadratic">Bậc hai</option>
+              </select>
+            </label>
+          </div>
+          <button class="primary-button" id="parseBtn" type="button">Cập nhật điểm</button>
+        </section>
+
+        <section class="tab-panel" id="tab-roi">
+          <label class="file-input">
+            <span>GeoJSON ROI</span>
+            <input id="roiFile" type="file" accept=".geojson,.json,application/geo+json,application/json" />
+          </label>
+          <label>
+            <span>Vùng nội suy</span>
+            <textarea id="roiText" spellcheck="false" aria-label="GeoJSON ROI"></textarea>
+          </label>
+          <div class="button-row">
+            <button id="parseRoiBtn" type="button">Cập nhật ROI</button>
+            <button id="deriveRoiBtn" type="button">Từ điểm đo</button>
+          </div>
+        </section>
+
+        <section class="tab-panel" id="tab-model">
+          <div class="field-grid">
+            <label>
+              <span>Variogram</span>
+              <select id="variogramModel">
+                <option value="spherical">Spherical</option>
+                <option value="exponential">Exponential</option>
+                <option value="gaussian">Gaussian</option>
+              </select>
+            </label>
+            <label>
+              <span>Số lag</span>
+              <input id="lagCount" type="number" min="5" max="24" step="1" value="12" />
+            </label>
+            <label>
+              <span>Nugget</span>
+              <input id="nugget" type="number" min="0" step="0.01" value="0.05" />
+            </label>
+            <label>
+              <span>Partial sill</span>
+              <input id="partialSill" type="number" min="0.0001" step="0.01" value="1" />
+            </label>
+            <label>
+              <span>Range (m)</span>
+              <input id="range" type="number" min="1" step="10" value="5000" />
+            </label>
+            <label>
+              <span>Hàng xóm</span>
+              <input id="neighbors" type="number" min="4" max="64" step="1" value="18" />
+            </label>
+            <label>
+              <span>Lưới</span>
+              <input id="gridSize" type="number" min="25" max="180" step="5" value="80" />
+            </label>
+            <label>
+              <span>Đệm ROI (%)</span>
+              <input id="roiBuffer" type="number" min="2" max="60" step="1" value="12" />
+            </label>
+          </div>
+          <div class="button-row">
+            <button id="fitVariogramBtn" type="button">Fit variogram</button>
+            <button class="primary-button" id="runBtn" type="button">Nội suy</button>
+          </div>
+        </section>
+
+        <section class="tab-panel" id="tab-export">
+          <div class="button-row">
+            <button id="exportCsvBtn" type="button">Tải CSV</button>
+            <button id="exportGeojsonBtn" type="button">Tải GeoJSON</button>
+          </div>
+          <dl class="metric-list">
+            <div><dt>Điểm đo</dt><dd id="metricPoints">0</dd></div>
+            <div><dt>Ô lưới</dt><dd id="metricCells">0</dd></div>
+            <div><dt>R² trend</dt><dd id="metricR2">-</dd></div>
+            <div><dt>RMSE trend</dt><dd id="metricRmse">-</dd></div>
+          </dl>
+        </section>
+
+        <footer class="status-line" id="statusLine">Sẵn sàng.</footer>
+      </aside>
+
+      <main class="workspace">
+        <section class="map-area">
+          <div class="canvas-stack">
+            <canvas id="mapCanvas" width="1200" height="760"></canvas>
+            <div class="legend" id="legend"></div>
+          </div>
+        </section>
+        <section class="analysis-strip">
+          <div class="plot-panel">
+            <div class="panel-title">
+              <h2>Variogram phần dư</h2>
+              <span id="variogramSummary">Chưa tính</span>
+            </div>
+            <canvas id="variogramCanvas" width="520" height="220"></canvas>
+          </div>
+          <div class="plot-panel">
+            <div class="panel-title">
+              <h2>Ô đang xem</h2>
+              <span id="cellSummary">-</span>
+            </div>
+            <div class="cell-readout">
+              <div><span>Lat</span><strong id="readLat">-</strong></div>
+              <div><span>Lon</span><strong id="readLon">-</strong></div>
+              <div><span>Giá trị</span><strong id="readValue">-</strong></div>
+              <div><span>Phương sai</span><strong id="readVariance">-</strong></div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,16 @@
+streamlit==1.42.0
+streamlit-folium
+folium
+geopandas
+rasterio
+scikit-learn
+pykrige
+gstools
+earthengine-api
+geemap
+pandas
+numpy
+matplotlib
+scipy
+
+python-dotenv
