@@ -1,19 +1,14 @@
 import streamlit as st
 import os
-from dotenv import load_dotenv, set_key
-
-env_path = os.path.join(os.getcwd(), '.env')
-load_dotenv(env_path)
+import json
 
 def load_system_config():
-    return {"gee_project_id": os.getenv("GEE_PROJECT_ID", "")}
+    return {"gee_project_id": "rkapp-492504"}
 
 def save_system_config(config):
-    gee_id = config.get("gee_project_id", "")
-    os.environ["GEE_PROJECT_ID"] = gee_id
-    if not os.path.exists(env_path):
-        open(env_path, 'a').close()
-    set_key(env_path, "GEE_PROJECT_ID", gee_id)
+    # Optional: could save to json if you still want to allow changes,
+    # but the user requested to hardcode it, so we can just pass.
+    pass
 
 def render_settings():
     st.title("⚙️ Cài đặt Hệ thống Toàn cục")
